@@ -1,5 +1,3 @@
-import typing as ty
-
 import torch
 from torch import nn
 
@@ -21,12 +19,7 @@ class PatchEmbedder(nn.Module):
         
         # Добавьте сверточный слой, который преобразует патчи из
         # изображения в векторы.
-        self._embedder = torch.nn.Conv2d(
-            in_channels=in_channels,
-            out_channels=self.embed_dim,
-            kernel_size=self.patch_size,
-            stride=self.patch_size,
-        )
+        self._embedder = ...
 
     def forward(self, tensor: torch.Tensor) -> torch.Tensor:
         """
@@ -81,6 +74,12 @@ class LinearProjection(nn.Module):
 
         Args:
             tensor: Батч с картинками.
+        
+        Note:
+            На вход идет батч с картинками размера (N, C, H, W).
+            На выходе мы должны получить батч эмбеддингов патчей
+            и токена класса, сложенных с матрицей позиционных
+            эмбеддингов. Размер этого счастья должен быть (N, H*W+1, embed_dim).
         """
         raise NotImplementedError
 
@@ -106,6 +105,10 @@ class ScaledDotProductAttention(nn.Module):
 
         Args:
             tensor: Батч эмбеддингов патчей.
+        
+        Note:
+            Размер входа: (N, H*W+1, embed_dim).
+            Размер выхода: (N, H*W+1, qkv_dim)
         """
         raise NotImplementedError
 
@@ -119,12 +122,12 @@ class MultiHeadSelfAttention(torch.nn.Module):
         dropout_rate: float = 0.1,
     ) -> None:
         super().__init__()
-
-		# Надо вспомнить, что в селф-аттеншене участвует несколько голов,
+        
+        # Надо вспомнить, что в селф-аттеншене участвует несколько голов,
         # и сооздать их соответствующее количество.
         self.attns = ...
 
-		# А тут надо вспомнить, что внутри ViT размерность эмбеддингов
+        # А тут надо вспомнить, что внутри ViT размерность эмбеддингов
         # не меняется, и поэтому после нескольких голов селф-аттеншена
         # полученные эмбеддинги надо вернуть в их исходную размерность.
         # Конечно же, не забыв про дропаут.
@@ -134,6 +137,13 @@ class MultiHeadSelfAttention(torch.nn.Module):
         """
         1) Считаем все головы аттеншена;
         2) Проецируем результат в исходную размерность.
+
+        Args:
+            tensor: Батч эмбеддингов патчей.
+        
+        Note:
+            Размер входа: (N, H*W+1, embed_dim).
+            Размер выхода: (N, H*W+1, embed_dim).
         """
         raise NotImplementedError
 
@@ -147,8 +157,38 @@ class MLP(torch.nn.Module):
     ) -> None:
         super().__init__()
 
-        # Тут должен быть кэжуал многослойный персептрон.
+        # Тут должен быть кэжуал многослойный персептрон из статьи.
         self.mlp = ...
 
     def forward(self, tensor: torch.Tensor) -> torch.Tensor:
+        raise NotImplementedError
+
+
+class ViT(torch.nn.Module):
+    def __init__(
+        self,
+        image_size: int = 224,
+        patch_size: int = 16,
+        in_channels: int = 3,
+        embed_dim: int = 768,
+        qkv_dim: int = 64,
+        mlp_hidden_size: int = 3072,
+        n_layers: int = 12,
+        n_heads: int = 12,
+        n_classes: int = 1_000,
+    ):
+        super().__init__()
+
+        # Нужно создать весь энкодер ViT'a, не забыв про LinearProjection.
+        self.encoder = ...
+
+        # и классификационную голову.
+        self.classifier = ...
+
+    def forward(self, tensor: torch.Tensor) -> torch.Tensor:
+        """
+        1) Прогнать через энкодер;
+        2) Прогнать через классификационную голову, не забыв, что в
+           статье в нее подается только эмбеддинг токена класса.
+        """
         raise NotImplementedError
